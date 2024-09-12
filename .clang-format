@@ -1,0 +1,32 @@
+---
+BasedOnStyle: Mozilla
+AccessModifierOffset: -4
+AlignConsecutiveAssignments:
+  Enabled: true
+  AlignCompound: true
+  AlignFunctionPointers: true
+AlignConsecutiveBitFields:
+  Enabled: true
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+AlignConsecutiveMacros:
+  Enabled: true
+  AlignCompound: true
+  AlignFunctionPointers: true
+  PadOperators: true
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+IndentWidth: 4
+ObjCBlockIndentWidth: 4
+BracedInitializerIndentWidth: 4
