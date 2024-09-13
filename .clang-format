@@ -25,8 +25,11 @@ AlignConsecutiveShortCaseStatements:
   AcrossEmptyLines: true
   AcrossComments: true
   AlignCaseColons: true
+AllowShortFunctionsOnASingleLine: All
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
+UseTab: Always
 IndentWidth: 4
+TabWidth: 4
 ObjCBlockIndentWidth: 4
 BracedInitializerIndentWidth: 4
