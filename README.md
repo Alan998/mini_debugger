@@ -25,17 +25,24 @@ cmake -S . -B ./build
 ./mini_debugger <program_executable>
 ```
 ## Available Commands
-- continue
+|Commands|Options|description|
+|--------|-------|-----------|
+|continue | - |continue program execution|
+|register|dump|print all registers' value|
+|register|read \[register name\]|read the register's value|
+|register|write \[register name\] \[value\]|write value to register (value needs to start with 0x)|
+|memory|read \[address\]|read memory at given address (address needs to start with 0x)|
+|memory|write \[address\] \[value\]|write value into memory at given address (address and value needs to start with 0x)|
 
 Press <Ctrl + d> to exit
 
 ## Goals
 - [x] Launch, halt, and continue execution
 - [ ] Set breakpoints on
-	- [ ] Memory addresses
+	- [x] Memory addresses
 	- [ ] Source code lines
 	- [ ] Function entry
-- [ ] Read and write registers and memory
+- [x] Read and write registers and memory
 - [ ] Single stepping
 - [ ] Print current source location
 - [ ] Print backtrace
