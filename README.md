@@ -33,6 +33,9 @@ cmake -S . -B ./build
 |register|write \[register name\] \[value\]|write value to register (value needs to start with 0x)|
 |memory|read \[address\]|read memory at given address (address needs to start with 0x)|
 |memory|write \[address\] \[value\]|write value into memory at given address (address and value needs to start with 0x)|
+|step| - |step in a function|
+|next| - |step over a function|
+|finish| - |step out a function|
 
 Press <Ctrl + d> to exit
 
@@ -44,6 +47,6 @@ Press <Ctrl + d> to exit
 	- [ ] Function entry
 - [x] Read and write registers and memory
 - [ ] Single stepping
-- [ ] Print current source location
+- [x] Print current source location
 - [ ] Print backtrace
 - [ ] Print values of simple variables
