@@ -9,6 +9,22 @@
 
 namespace mini_debugger {
 
+enum class symbol_type
+{
+	notype,	 // no type (e.g., absolute symbol)
+	object,	 // data object
+	func,	 // function entry point
+	section, // symbol is associated with a section
+	file,	 // source file associated with the object file
+};
+
+struct symbol
+{
+	symbol_type	   type;
+	std::string	   name;
+	std::uintptr_t addr;
+};
+
 static constexpr int DWORD_SIZE{ 16 };
 
 static constexpr short DEBUG_WINDOW_LEN{ 78 };
@@ -23,6 +39,9 @@ public:
 
 	// set a breakpoint at given address 0xADDRESS
 	void set_breakpoint_at_address(const std::intptr_t addr);
+	void set_breakpoint_at_function(const std::string_view func_name);
+	void set_breakpoint_at_source_line(const std::string_view file,
+									   unsigned				  line);
 
 	// print all registers's values
 	void dump_registers();
@@ -38,8 +57,8 @@ public:
 	void single_step_instruction_with_breakpoint_check();
 	void step_in();
 	void step_out();
-	void remove_breakpoint(const std::intptr_t addr);
 	void step_over();
+	void remove_breakpoint(const std::intptr_t addr);
 
 private:
 	// handle user input
@@ -74,6 +93,8 @@ private:
 	void handle_sigtrap(const siginfo_t info);
 
 	uint64_t offset_dwarf_address(const uint64_t addr);
+
+	std::vector<symbol> lookup_symbol(const std::string_view symbol_name);
 
 	std::string									  m_prog_name;
 	pid_t										  m_pid;

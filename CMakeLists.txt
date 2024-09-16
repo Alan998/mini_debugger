@@ -11,7 +11,7 @@ message(STATUS "Source file: ${SOURCES}")
 
 add_executable(mini_debugger ${SOURCES} ext/linenoise/linenoise.c)
 target_include_directories(mini_debugger PRIVATE ext/linenoise ext/libelfin include)
-target_compile_options(mini_debugger PRIVATE -Wall -Wextra -g)
+target_compile_options(mini_debugger PRIVATE -Wall -Wextra)
 target_link_libraries(mini_debugger PRIVATE
 	${PROJECT_SOURCE_DIR}/ext/libelfin/dwarf/libdwarf++.so
 	${PROJECT_SOURCE_DIR}/ext/libelfin/elf/libelf++.so)

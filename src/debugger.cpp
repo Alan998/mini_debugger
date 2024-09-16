@@ -44,6 +44,53 @@ is_prefix(const std::string_view s, const std::string_view str)
 	return std::equal(s.begin(), s.end(), str.begin());
 }
 
+// check if `s` is a suffix of `str`
+static bool
+is_suffix(const std::string_view s, const std::string_view str)
+{
+	if (s.size() > str.size())
+		return false;
+	auto diff = str.size() - s.size();
+	return std::equal(s.begin(), s.end(), str.begin() + diff);
+}
+
+std::string
+to_string(symbol_type symbol)
+{
+	switch (symbol) {
+		case symbol_type::notype:
+			return "notype";
+		case symbol_type::object:
+			return "object";
+		case symbol_type::func:
+			return "func";
+		case symbol_type::section:
+			return "section";
+		case symbol_type::file:
+			return "file";
+	}
+	return {};
+}
+
+symbol_type
+to_symbol_type(elf::stt sym)
+{
+	switch (sym) {
+		case ::elf::stt::notype:
+			return symbol_type::notype;
+		case ::elf::stt::object:
+			return symbol_type::object;
+		case ::elf::stt::func:
+			return symbol_type::func;
+		case ::elf::stt::section:
+			return symbol_type::section;
+		case ::elf::stt::file:
+			return symbol_type::file;
+		default:
+			return symbol_type::notype;
+	}
+}
+
 Debugger::Debugger(std::string prog_name, const pid_t pid)
 	: m_prog_name{ std::move(prog_name) }
 	, m_pid{ pid }
@@ -86,6 +133,13 @@ Debugger::handle_command(const std::string_view line)
 			// naively assume that the user has written 0xADDRESS
 			std::string addr{ args.at(1), 2 }; // exlude 0x from the string
 			set_breakpoint_at_address(std::stol(addr, 0, DWORD_SIZE));
+		} else if (args.at(1).find(':') != std::string::npos) {
+			auto file_and_line = split(args.at(1), ':');
+			std::cout << file_and_line[0] << ' ' << file_and_line[1] << '\n';
+			set_breakpoint_at_source_line(file_and_line.at(0),
+										  std::stoi(file_and_line.at(1)));
+		} else {
+			set_breakpoint_at_function(args.at(1));
 		}
 	} else if (is_prefix(command, "register")) {
 		if (is_prefix(args.at(1), "dump")) {
@@ -118,6 +172,12 @@ Debugger::handle_command(const std::string_view line)
 		step_over();
 	} else if (is_prefix(command, "finish")) {
 		step_out();
+	} else if (is_prefix(command, "symbol")) {
+		auto syms = lookup_symbol(args.at(1));
+		for (auto&& sym : syms) {
+			std::cout << sym.name << ' ' << mini_debugger::to_string(sym.type)
+					  << " 0x" << std::hex << sym.addr << std::endl;
+		}
 	} else {
 		std::cerr << "Unknown command\n";
 	}
@@ -477,4 +537,65 @@ Debugger::step_over()
 	}
 }
 
+void
+Debugger::set_breakpoint_at_function(const std::string_view func_name)
+{
+	// iterate through all compilation units and search for functions with name
+	// which matches
+	for (const auto& compilation_unit : m_dwarf.compilation_units()) {
+		for (const auto& die : compilation_unit.root()) {
+			if (die.has(dwarf::DW_AT::name) &&
+				dwarf::at_name(die) == func_name.data()) {
+				auto low_pc = dwarf::at_low_pc(die);
+				auto entry	= get_line_entry_from_pc(low_pc);
+				// increment the line entry by one to get the first line of the
+				// user code instead of the prologue
+				++entry;
+				set_breakpoint_at_address(offset_dwarf_address(entry->address));
+			}
+		}
+	}
+}
+
+void
+Debugger::set_breakpoint_at_source_line(const std::string_view file,
+										unsigned			   line)
+{
+	for (const auto& compilation_unit : m_dwarf.compilation_units()) {
+		if (!is_suffix(file, dwarf::at_name(compilation_unit.root())))
+			continue;
+		const auto& line_entry = compilation_unit.get_line_table();
+
+		for (const auto& entry : line_entry) {
+			// check the line table entry is marked as the beginning of a
+			// statement
+			if (entry.is_stmt && entry.line == line) {
+				set_breakpoint_at_address(offset_dwarf_address(entry.address));
+				return;
+			}
+		}
+	}
+}
+
+std::vector<symbol>
+Debugger::lookup_symbol(const std::string_view symbol_name)
+{
+	// loop through sections of ELF and collect every symbols found into a
+	// vector
+	std::vector<symbol> syms;
+	for (auto& section : m_elf.sections()) {
+		if (section.get_hdr().type != elf::sht::symtab &&
+			section.get_hdr().type != elf::sht::dynsym)
+			continue;
+
+		for (auto sym : section.as_symtab()) {
+			if (sym.get_name() != symbol_name)
+				continue;
+			auto& data = sym.get_data();
+			syms.emplace_back(symbol{
+				to_symbol_type(data.type()), sym.get_name(), data.value });
+		}
+	}
+	return syms;
+}
 };
