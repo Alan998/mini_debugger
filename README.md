@@ -41,8 +41,10 @@ cmake -S . -B ./build
 |next| - |step over a function|
 |finish| - |step out a function|
 |symbol|\[symbol name\]|print symbol type and address|
+|quit| - |exit mini_debugger|
 
-Press <Ctrl + d> to exit
+## Examples
+[Wiki](https://github.com/Alan998/mini_debugger/wiki)
 
 ## Goals
 - [x] Launch, halt, and continue execution
@@ -54,4 +56,4 @@ Press <Ctrl + d> to exit
 - [x] Single stepping
 - [x] Print current source location
 - [x] Print backtrace
-- [ ] Print values of simple variables
+- [ ] Print values of simple variables (can only print type long)
