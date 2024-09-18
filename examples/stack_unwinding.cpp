@@ -1,28 +1,28 @@
 void a() {
-	int foo = 1;
+	long foo = 1;
 }
 
 void b() {
-	int foo = 2;
+	long foo = 2;
 	a();
 }
 void c() {
-	int foo = 3;
+	long foo = 3;
 	b();
 }
 
 void d() {
-	int foo = 4;
+	long foo = 4;
 	c();
 }
 
 void e() {
-	int foo = 5;
+	long foo = 5;
 	d();
 }
 
 void f() {
-	int foo = 6;
+	long foo = 6;
 	e();
 }
 

@@ -6,7 +6,7 @@ A learning project to create a mini debugger following [this tutorial](https://b
 - [linenoise](https://github.com/antirez/linenoise) for handling command line inputs
 - [libelfin](https://github.com/TartanLlama/libelfin/tree/fbreg) for parsing debug information (using the fbreg branch)
 - cmake
-- g++ (with c++20 standards supported or above)
+- g++ (with c++17 standards supported or above)
 
 ## Build
 After cloning into your own directory, build linenoise and libelfin with make.
@@ -27,6 +27,10 @@ cmake -S . -B ./build
 ## Available Commands
 |Commands|Options|description|
 |--------|-------|-----------|
+|break|\[address\]|set a breakpoint at given address|
+|break|\[filename\]:\[line number\]|set a breakpoint at given line number|
+|break|\[function name\]|set a breakpoint at function entry|
+|backtrace| - |print each frames on the stack|
 |continue | - |continue program execution|
 |register|dump|print all registers' value|
 |register|read \[register name\]|read the register's value|
@@ -36,17 +40,18 @@ cmake -S . -B ./build
 |step| - |step in a function|
 |next| - |step over a function|
 |finish| - |step out a function|
+|symbol|\[symbol name\]|print symbol type and address|
 
 Press <Ctrl + d> to exit
 
 ## Goals
 - [x] Launch, halt, and continue execution
-- [ ] Set breakpoints on
+- [x] Set breakpoints on
 	- [x] Memory addresses
-	- [ ] Source code lines
-	- [ ] Function entry
+	- [x] Source code lines
+	- [x] Function entry
 - [x] Read and write registers and memory
-- [ ] Single stepping
+- [x] Single stepping
 - [x] Print current source location
-- [ ] Print backtrace
+- [x] Print backtrace
 - [ ] Print values of simple variables

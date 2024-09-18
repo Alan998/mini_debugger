@@ -1,4 +1,5 @@
 #include <debugger.hpp>
+#include <expr_context.hpp>
 #include <linenoise.h>
 #include <registers.hpp>
 
@@ -132,7 +133,7 @@ Debugger::handle_command(const std::string_view line)
 		if (args.at(1)[0] == '0' && args.at(1)[1] == 'x') {
 			// naively assume that the user has written 0xADDRESS
 			std::string addr{ args.at(1), 2 }; // exlude 0x from the string
-			set_breakpoint_at_address(std::stol(addr, 0, DWORD_SIZE));
+			set_breakpoint_at_address(std::stoull(addr, 0, WORD_SIZE));
 		} else if (args.at(1).find(':') != std::string::npos) {
 			auto file_and_line = split(args.at(1), ':');
 			std::cout << file_and_line[0] << ' ' << file_and_line[1] << '\n';
@@ -152,19 +153,20 @@ Debugger::handle_command(const std::string_view line)
 			std::string val{ args.at(3), 2 }; // assume 0xValue
 			set_register_value(m_pid,
 							   get_register_from_name(args.at(2)),
-							   std::stol(val, 0, DWORD_SIZE));
+							   std::stoull(val, 0, WORD_SIZE));
 		}
 	} else if (is_prefix(command, "memory")) {
 		std::string addr{ args.at(2), 2 }; // assume 0xADDRESS
 
 		if (is_prefix(args.at(1), "read")) {
-			std::cout << std::hex << read_memory(std::stol(addr, 0, DWORD_SIZE))
+			std::cout << std::hex
+					  << read_memory(std::stoull(addr, 0, WORD_SIZE))
 					  << std::endl;
 		}
 		if (is_prefix(args.at(1), "write")) {
 			std::string value{ args.at(3), 2 };
-			write_memory(std::stol(addr, 0, DWORD_SIZE),
-						 std::stol(value, 0, DWORD_SIZE));
+			write_memory(std::stoull(addr, 0, WORD_SIZE),
+						 std::stoull(value, 0, WORD_SIZE));
 		}
 	} else if (is_prefix(command, "step")) {
 		step_in();
@@ -178,6 +180,13 @@ Debugger::handle_command(const std::string_view line)
 			std::cout << sym.name << ' ' << mini_debugger::to_string(sym.type)
 					  << " 0x" << std::hex << sym.addr << std::endl;
 		}
+	} else if (is_prefix(command, "backtrace")) {
+		print_backtrace();
+	} else if (is_prefix(command, "variables")) {
+		read_variables();
+	} else if (is_prefix(command, "quit")) {
+		std::cout << "Exited from mini debugger\n";
+		exit(0);
 	} else {
 		std::cerr << "Unknown command\n";
 	}
@@ -208,37 +217,37 @@ Debugger::dump_registers()
 	for (const auto& register_descriptor : g_register_descriptors) {
 		std::cout << std::setfill(' ') << std::setw(9)
 				  << register_descriptor.name << " 0x" << std::setfill('0')
-				  << std::setw(DWORD_SIZE) << std::hex
+				  << std::setw(WORD_SIZE) << std::hex
 				  << get_register_value(m_pid, register_descriptor.reg) << '\n';
 	}
 }
 
-uint64_t
-Debugger::read_memory(const uint64_t address)
+std::intptr_t
+Debugger::read_memory(const std::intptr_t address)
 {
 	return ptrace(PTRACE_PEEKDATA, m_pid, address, nullptr);
 }
 
 void
-Debugger::write_memory(const uint64_t address, const uint64_t value)
+Debugger::write_memory(const std::intptr_t address, const uint64_t value)
 {
 	ptrace(PTRACE_POKEDATA, m_pid, address, value);
 }
 
-uint64_t
+std::intptr_t
 Debugger::get_pc()
 {
 	return get_register_value(m_pid, Reg::rip);
 }
 
-uint64_t
+std::intptr_t
 Debugger::get_offset_pc()
 {
 	return offset_load_address(get_pc());
 }
 
 void
-Debugger::set_pc(const uint64_t pc)
+Debugger::set_pc(const std::intptr_t pc)
 {
 	set_register_value(m_pid, Reg::rip, pc);
 }
@@ -284,7 +293,7 @@ Debugger::wait_for_signal()
 }
 
 dwarf::die
-Debugger::get_function_from_pc(const uint64_t pc)
+Debugger::get_function_from_pc(const std::intptr_t pc)
 {
 	// iterate through compilation_units until pc is found
 	for (auto& compilation_unit : m_dwarf.compilation_units()) {
@@ -305,7 +314,7 @@ Debugger::get_function_from_pc(const uint64_t pc)
 }
 
 dwarf::line_table::iterator
-Debugger::get_line_entry_from_pc(const uint64_t pc)
+Debugger::get_line_entry_from_pc(const std::intptr_t pc)
 {
 	for (auto& compilation_unit : m_dwarf.compilation_units()) {
 		if (!die_pc_range(compilation_unit.root()).contains(pc))
@@ -335,11 +344,11 @@ Debugger::initialise_load_address()
 	// read the first address from the file
 	std::string addr{};
 	std::getline(map, addr, '-');
-	m_load_address = std::stoul(addr, 0, DWORD_SIZE);
+	m_load_address = std::stoul(addr, 0, WORD_SIZE);
 }
 
-uint64_t
-Debugger::offset_load_address(const uint64_t addr)
+std::intptr_t
+Debugger::offset_load_address(const std::intptr_t addr)
 {
 	return addr - m_load_address;
 }
@@ -415,6 +424,8 @@ Debugger::handle_sigtrap(const siginfo_t info)
 			print_source(line_entry->file->path, line_entry->line);
 			return;
 		}
+		// signal 0 checks if the process is running
+		case 0:
 		// TRAP_TRACE will be set if the signal was sent by single stepping
 		case TRAP_TRACE:
 			return;
@@ -485,8 +496,8 @@ Debugger::step_in()
 	print_source(line_entry->file->path, line_entry->line);
 }
 
-uint64_t
-Debugger::offset_dwarf_address(const uint64_t addr)
+std::intptr_t
+Debugger::offset_dwarf_address(const std::intptr_t addr)
 {
 	return addr + m_load_address;
 }
@@ -597,5 +608,75 @@ Debugger::lookup_symbol(const std::string_view symbol_name)
 		}
 	}
 	return syms;
+}
+
+void
+Debugger::print_backtrace()
+{
+
+	// output format of each frame
+	auto output_frame = [frame_number = 0](auto&& func) mutable {
+		std::cout << "frame #" << frame_number++ << ": 0x"
+				  << dwarf::at_low_pc(func) << ' ' << dwarf::at_name(func)
+				  << std::endl;
+	};
+
+	// get current function
+	auto current_func = get_function_from_pc(offset_load_address(get_pc()));
+	output_frame(current_func);
+
+	// frame pointer is stored in the rbp register
+	std::intptr_t frame_pointer = get_register_value(m_pid, Reg::rbp);
+	// return address is 8 bytes up the stack from the frame pointer
+	std::intptr_t return_address = read_memory(frame_pointer + 8);
+
+	// keep unwinding until debugger hits main
+	while (dwarf::at_name(current_func) != "main") {
+		current_func =
+			get_function_from_pc(offset_load_address(return_address));
+		output_frame(current_func);
+		frame_pointer  = read_memory(frame_pointer);
+		return_address = read_memory(frame_pointer + 8);
+	}
+}
+
+void
+Debugger::read_variables()
+{
+	// find current function
+	auto func = get_function_from_pc(get_offset_pc());
+
+	// iterate through entries and look for variables
+	for (const auto& die : func) {
+		if (die.tag != dwarf::DW_TAG::variable)
+			continue;
+
+		auto location_val = die[dwarf::DW_AT::location];
+		if (location_val.get_type() == dwarf::value::type::exprloc) {
+			Ptrace_Expr_Context context{ m_pid, m_load_address };
+			auto result = location_val.as_exprloc().evaluate(&context);
+
+			switch (result.location_type) {
+				case dwarf::expr_result::type::address: {
+					auto offset_addr = result.value;
+					auto value		 = read_memory(offset_addr);
+					std::cout << at_name(die) << " (0x" << std::hex
+							  << offset_addr << ") = " << value << std::endl;
+					break;
+				}
+				case dwarf::expr_result::type::reg: {
+					auto value = get_register_value_from_dwarf_register(
+						m_pid, result.value);
+					std::cout << at_name(die) << " (reg " << result.value
+							  << ") = " << value << std::endl;
+					break;
+				}
+				default:
+					throw std::runtime_error{ "Unhandled variable location" };
+			}
+		} else {
+			throw std::runtime_error{ "Unhandled variable location" };
+		}
+	}
 }
 };

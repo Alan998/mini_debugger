@@ -8,7 +8,7 @@
 
 namespace mini_debugger {
 
-uint64_t
+std::intptr_t
 get_register_value(const pid_t pid, const Reg request_reg)
 {
 	user_regs_struct regs;
@@ -21,9 +21,9 @@ get_register_value(const pid_t pid, const Reg request_reg)
 							   return register_descriptor.reg == request_reg;
 						   });
 
-	// cast to uint64_t is safe because user_regs_struct is a standard layout
-	// type
-	return *(reinterpret_cast<uint64_t*>(&regs) +
+	// cast to std::intptr_t is safe because user_regs_struct is a standard
+	// layout type
+	return *(reinterpret_cast<std::intptr_t*>(&regs) +
 			 (it - g_register_descriptors.begin()));
 }
 
@@ -41,12 +41,12 @@ set_register_value(const pid_t pid, const Reg request_reg, const uint64_t value)
 						   });
 
 	// write value into the requested register
-	*(reinterpret_cast<uint64_t*>(&regs) +
+	*(reinterpret_cast<std::intptr_t*>(&regs) +
 	  (it - g_register_descriptors.begin())) = value;
 	ptrace(PTRACE_SETREGS, pid, nullptr, &regs);
 }
 
-uint64_t
+std::intptr_t
 get_register_value_from_dwarf_register(const pid_t pid, const int reg_num)
 {
 	auto it = std::find_if(g_register_descriptors.begin(),

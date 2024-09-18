@@ -1,8 +1,7 @@
-#include <cstdio>
+long glob {100}; // global variable
 int main(void) {
-	int a = 3;
-	int b = 1;
-	int c = a + b;
-	printf("a: %d  b: %d  c: %d\n", a, b, c);
+	long a = 3;
+	long b = 1;
+	long c = a + b + glob;
 	return 0;
 }

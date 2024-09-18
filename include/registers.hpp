@@ -80,7 +80,7 @@ static const std::array<Reg_Descriptor, TOTAL_REGISTERS> g_register_descriptors{
 };
 
 // get requested register depending on which register is requested
-uint64_t
+std::intptr_t
 get_register_value(const pid_t pid, const Reg request_reg);
 
 // write data to register
@@ -89,8 +89,8 @@ set_register_value(const pid_t	  pid,
 				   const Reg	  request_reg,
 				   const uint64_t value);
 
-uint64_t
-get_register_value_from_dwarf_register(const pid_t pid, const unsigned reg_num);
+std::intptr_t
+get_register_value_from_dwarf_register(const pid_t pid, const int reg_num);
 
 std::string
 get_register_name(const Reg request_reg);
