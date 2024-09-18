@@ -36,7 +36,6 @@ main(int argc, char* argv[])
 	} else if (pid >= 1) {
 		// Entered the parent process, exectue debugger
 		std::cout << "Started debugging process " << pid << '\n';
-		std::cout << "Press <Ctrl+d> to quit\n";
 
 		Debugger dbg{ program, pid };
 		dbg.run();

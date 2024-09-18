@@ -164,7 +164,7 @@ Debugger::handle_command(const std::string_view line)
 					  << std::endl;
 		}
 		if (is_prefix(args.at(1), "write")) {
-			std::string value{ args.at(3), 2 };
+			std::string value{ args.at(3), 2 }; // assume 0xValue
 			write_memory(std::stoull(addr, 0, WORD_SIZE),
 						 std::stoull(value, 0, WORD_SIZE));
 		}
@@ -661,7 +661,8 @@ Debugger::read_variables()
 					auto offset_addr = result.value;
 					auto value		 = read_memory(offset_addr);
 					std::cout << at_name(die) << " (0x" << std::hex
-							  << offset_addr << ") = " << value << std::endl;
+							  << offset_addr;
+					std::cout << std::dec << ") = " << value << std::endl;
 					break;
 				}
 				case dwarf::expr_result::type::reg: {
